@@ -13,3 +13,5 @@ output/
 .idea/
 tmp/
 books/
+.venv-pdf/
+.assets/
