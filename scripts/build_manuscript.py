@@ -218,6 +218,20 @@ def main() -> int:
 
     print("\n".join(lines))
     print(f"\nDOCX: {docx_path}\nEPUB: {epub_path}")
+
+    # Typeset the PDF as well (reportlab + PyMuPDF lives in scripts/build_pdf.py).
+    try:
+        import subprocess
+
+        subprocess.run(
+            [sys.executable, os.path.join(ROOT, "scripts", "build_pdf.py")],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        print(f"PDF:  {os.path.join(OUT_DIR, 'The_Bell_in_the_River.pdf')}")
+    except Exception as exc:  # pragma: no cover
+        print(f"(PDF step skipped: {exc})")
     return 0
 
 
