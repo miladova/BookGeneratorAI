@@ -13,10 +13,12 @@ village in the Kielce hills in the summer of 1938.
 | File | Contents |
 |---|---|
 | `Two-Fires.md` | The complete manuscript (front matter, all ten chapters, historical note, glossary). |
-| `Two Fires - manuscript.docx` | Print-formatted 6×9 reading copy (generated; not tracked in git). |
+| `Two Fires.pdf` | **Typeset 6×9 reading copy** — 148 pages, EB Garamond, running heads, folios, clickable contents. |
+| `Two Fires - manuscript.docx` | Editable 6×9 manuscript (generated; gitignored). |
 | `00-front-matter.md` … `10-the-second-fire.md` | Source chapters, one file each. |
 | `99-back-matter.md` | A note on history and invention; glossary of Polish terms. |
 | `build_docx.py` | Rebuilds the DOCX from the chapter files (`pip install python-docx`, then `python3 build_docx.py`). |
+| `build_pdf.py` | Rebuilds the PDF (`pip install reportlab pyphen`, then `python3 build_pdf.py`). Downloads the EB Garamond fonts (SIL OFL 1.1) on first run. |
 
 ## Structure
 
