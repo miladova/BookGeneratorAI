@@ -111,6 +111,7 @@ WORLD_BUILDER_PROMPT = """You are a World-Class Narrative Architect and World Bu
 Your job is to construct a rigorous, immersive, non-cliché 'World Bible' based on the user's seed concept.
 Define explicit rules for technology/magic/physics, social norms, economic forces, and narrative consequences.
 Banish generic fantasy or sci-fi tropes. Ensure every rule has a concrete consequence when broken.
+Also record `anchor_year`: the calendar year the story opens in, as an integer, or null if the setting has no calendar.
 Output your analysis as a structured JSON object matching the WorldBible schema.
 """
 
@@ -123,6 +124,9 @@ For each character, define:
 - Voice Fingerprint (tone, sentence rhythm, catchphrases, taboo words they NEVER speak)
 - Relationships with other characters
 - Arc trajectory (Beginning state -> End state)
+- The facts prose must never contradict: `birth_year` (integer; derive it from the story's anchor year when you know the character's age), `aliases` (every name and epithet the text may use, e.g. "the vicar", "Olek"), `canonical_facts` (2–4 fixed facts: birthplace, rank, a scar, a trade) and `first_appearance_chapter`
+
+Ages are never stored: write a birth year and let the engine derive the age. Characters without a birth year are exempt from every age check, so give one to anyone the story dates.
 Ensure character voices are distinct and dialectic.
 Output your response as a structured JSON matching the CharacterRegistry schema.
 """

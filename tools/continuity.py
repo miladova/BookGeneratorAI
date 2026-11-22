@@ -85,6 +85,22 @@ def canon_from_registry(registry) -> List[Character]:
     return cast
 
 
+def canon_gaps(registry, *, dated: bool = True) -> List[str]:
+    """Names whose canon is too thin for the checks to defend them.
+
+    Generated registries forget birth years more often than they forget
+    motivations, and a character without one silently opts out of every age
+    check. Loud about the gap is better than quietly exempt.
+    """
+    gaps = []
+    for c in getattr(registry, "characters", []):
+        if dated and not getattr(c, "birth_year", None):
+            gaps.append(c.name)
+        elif not getattr(c, "aliases", None):
+            gaps.append(f"{c.name} (no aliases)")
+    return gaps
+
+
 def load_canon(path: str | Path) -> List[Character]:
     """Read a canon file: {"characters": [{"name":..., "birth_year":..., "aliases":[...]}]}."""
     data = json.loads(Path(path).read_text())

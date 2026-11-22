@@ -212,5 +212,47 @@ class TestColdReader(unittest.TestCase):
         self.assertIn("a boy at St Kazimierz, twenty-six", report.unresolved_references)
 
 
+class TestEngineAuthorsTheCanon(unittest.TestCase):
+    """The user supplies an idea; the engine must supply the facts."""
+
+    def test_chapters_inherit_the_anchor_year(self):
+        from pipeline import apply_anchor_years
+        from schemas.models import ChapterBeat, MasterOutline, WorldBible
+
+        outline = MasterOutline(chapters=[
+            ChapterBeat(chapter_number=1, year=None),
+            ChapterBeat(chapter_number=2, year=None),
+            ChapterBeat(chapter_number=3, year=1961),
+        ])
+        apply_anchor_years(outline, WorldBible(anchor_year=1958))
+        self.assertEqual([c.year for c in outline.chapters], [1958, 1958, 1961])
+
+    def test_undated_worlds_stay_undated(self):
+        from pipeline import apply_anchor_years
+        from schemas.models import ChapterBeat, MasterOutline, WorldBible
+
+        outline = MasterOutline(chapters=[ChapterBeat(chapter_number=1)])
+        apply_anchor_years(outline, WorldBible())
+        self.assertIsNone(outline.chapters[0].year)
+
+    def test_thin_canon_is_reported(self):
+        from schemas.models import CharacterProfile, CharacterRegistry
+        from tools.continuity import canon_gaps
+
+        registry = CharacterRegistry(characters=[
+            CharacterProfile(name="Tadeusz Rybak", birth_year=1932, aliases=["Rybak"]),
+            CharacterProfile(name="A Man In A Grey Suit", role="Antagonist"),
+        ])
+        self.assertEqual(canon_gaps(registry), ["A Man In A Grey Suit"])
+
+    def test_prompts_ask_for_the_facts(self):
+        from prompts.system_prompts import CHARACTER_ARCHITECT_PROMPT, WORLD_BUILDER_PROMPT
+
+        self.assertIn("birth_year", CHARACTER_ARCHITECT_PROMPT)
+        self.assertIn("aliases", CHARACTER_ARCHITECT_PROMPT)
+        self.assertIn("canonical_facts", CHARACTER_ARCHITECT_PROMPT)
+        self.assertIn("anchor_year", WORLD_BUILDER_PROMPT)
+
+
 if __name__ == "__main__":
     unittest.main()

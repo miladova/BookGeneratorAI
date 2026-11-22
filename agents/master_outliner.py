@@ -117,7 +117,7 @@ Cast:
 Plan exactly {num_chapters} chapters grouped into parts, with at least {max(3, num_chapters // 4)} setups that pay off later.
 Return ONLY JSON:
 {{"pacing_notes": "...",
- "chapters": [{{"chapter_number": 1, "part_title": "...", "title": "...", "pov_character": "...", "location": "...", "core_narrative_arc": "what irreversibly changes", "prerequisite_chapters": []}}],
+ "chapters": [{{"chapter_number": 1, "part_title": "...", "title": "...", "pov_character": "...", "location": "...", "year": null, "core_narrative_arc": "what irreversibly changes", "prerequisite_chapters": []}}],
  "setups_and_payoffs": [{{"name": "...", "description": "...", "planted_chapter": 1, "target_payoff_chapter": 5, "involved_characters": []}}]}}
 """
         validator = lambda plan: self._validate_plan(plan, num_chapters)

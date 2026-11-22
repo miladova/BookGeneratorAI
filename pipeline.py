@@ -35,6 +35,20 @@ BOOKS_ROOT = "books"
 BRIEF_KEY = "book_brief"
 
 
+def apply_anchor_years(outline, world):
+    """Give every undated chapter the world's anchor year, so ages can be derived.
+
+    A chapter may date itself; the anchor is only a default. Books without a
+    calendar keep `year=None` and simply skip the age checks.
+    """
+    anchor = getattr(world, "anchor_year", None)
+    if anchor and getattr(outline, "chapters", None):
+        for chapter in outline.chapters:
+            if getattr(chapter, "year", None) is None:
+                chapter.year = anchor
+    return outline
+
+
 def slugify(title: str) -> str:
     # Keep letters, combining vowel signs (essential in Tamil) and digits; everything else separates words
     kept = "".join(c if unicodedata.category(c)[0] in "LMN" else "_" for c in title)
@@ -199,7 +213,15 @@ class BookPipeline:
                 scenes_per_chapter=config.scenes_per_chapter, target_words=config.target_words,
             )
             self.state.save_master_outline(outline)
+        outline = apply_anchor_years(outline, world)
         print(f"  ✓ Master Outline: {len(outline.chapters)} chapters, {len(outline.foreshadowing)} planned setups.")
+
+        from tools.continuity import canon_gaps
+        gaps = canon_gaps(registry, dated=bool(getattr(world, "anchor_year", None)))
+        if gaps:
+            print(f"  ⚠️  Canon incomplete for {len(gaps)} character(s): "
+                  f"{', '.join(gaps[:6])}{'…' if len(gaps) > 6 else ''} — "
+                  "age and alias checks will skip them.")
         return brief, world, registry, outline
 
     def _write_chapter(self, chapter):

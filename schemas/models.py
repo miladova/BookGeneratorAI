@@ -48,6 +48,7 @@ class WorldBible(BaseModel):
     language: str = Field(default="english", description="Manuscript language: 'english' or 'tamil'")
     setting_overview: str = Field(default="Immersive, high-stakes setting environment.", description="Setting description")
     time_period: str = Field(default="Contemporary / Modern Era", description="Temporal setting")
+    anchor_year: Optional[int] = Field(default=None, description="Calendar year the story opens in; chapters inherit it unless they state their own")
     core_thematic_conflict: str = Field(default="Transformation vs Legacy Resistance", description="Central conflict")
     rules: List[WorldRule] = Field(default_factory=list, description="Explicit hard rules governing setting")
     forbidden_tropes: List[str] = Field(default_factory=list, description="Forbidden clichés")

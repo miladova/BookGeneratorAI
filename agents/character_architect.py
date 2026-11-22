@@ -42,6 +42,10 @@ Return output ONLY in JSON matching this schema:
       "core_motivation": "Motivation...",
       "fatal_flaw": "Fatal flaw...",
       "backstory_summary": "Backstory...",
+      "birth_year": 1922,
+      "aliases": ["Olek", "the vicar"],
+      "canonical_facts": {{"birthplace": "Wierzbica", "trade": "organist"}},
+      "first_appearance_chapter": 1,
       "voice_fingerprint": {{
         "tone": "Tone...",
         "sentence_structure": "Structure...",
