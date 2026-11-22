@@ -26,6 +26,7 @@ from agents.character_architect import CharacterArchitectAgent
 from agents.master_outliner import MasterOutlinerAgent
 from agents.prose_drafter import ProseDrafterAgent
 from agents.critics import MasterAdversarialReviewer
+from agents.cold_reader import ColdReaderAgent
 from prompts.system_prompts import FACT_CHECK_PROMPT
 from tools.card_manager import CardManager
 from tools.file_writer import FileWriterTool
@@ -55,6 +56,7 @@ class BookConfig:
     scenes_per_chapter: int = 4
     target_words: int = 80000
     max_revisions: int = 2
+    cold_read: bool = False
     opening_candidates: int = 3
     output: Optional[str] = None
     epub: Optional[str] = None
@@ -236,6 +238,18 @@ class BookPipeline:
         self.state.save_chapter_record(num, self._assemble(chapter, scenes), best_brief, final_text)
         self.state.save_json(checkpoint, [])
         print(f"  ✓ Chapter {num} Finalized: {len(final_text.split())} words.")
+
+        if getattr(config, "cold_read", False):
+            print(f"  [Agent: Cold Reader] Reading Chapter {num} with no prior knowledge...")
+            try:
+                report = ColdReaderAgent(self.llm).read(num, final_text)
+                self.state.save_json(f"cold_read_ch_{num}", report.model_dump())
+                for ref in report.unresolved_references:
+                    print(f"  ⚠️  Cold-reader could not identify: {ref}")
+                if not report.unresolved_references:
+                    print("  ✓ Cold read clean: every person on the page is identifiable.")
+            except Exception as exc:  # a broken reader must never break a manuscript
+                print(f"  ⚠️  Cold read unavailable for Chapter {num}: {exc}")
 
         print(f"  [Memory Engine] Updating story memory for Chapter {num}...")
         self.story_state = self.state.update_dynamic_story_state(

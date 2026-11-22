@@ -158,6 +158,8 @@ Return only the rewritten scene prose. No headings, labels or commentary.
 **World Rules:** {[r.rule_name + ': ' + r.narrative_consequence for r in world_bible.rules]}
 **People in this scene:**
 {self._cast_context(registry, sub_beat)}
+**Canon — do not contradict (numbers here are derived from birth years; the prose must agree):**
+{self._canon_context(registry, sub_beat, chapter_beat)}
 **Story State:**
 {self._knowledge_context(chapter_beat, story_state)}
 **Story So Far:**
@@ -181,7 +183,8 @@ End on: {sub_beat.ending_hook}
 
 **Craft:**
 {craft}
-7. **Banish AI Slop:** Forbidden: "a tapestry of," "a testament to," "shivers down her spine," "ஒரு சான்றாக அமைந்தது", "முதுகெலும்பில் நடுக்கம்", "echoed in the silence," and the "it wasn't X, it was Y" construction.
+7. **First mention:** when a person enters the chapter, give the name before the age, role or description. Never introduce someone as "the vicar, twenty-six" while another character in the scene could answer to that description — the reader will attach the number to the wrong person. If withholding the name is deliberate, make sure no one else could be meant.
+8. **Banish AI Slop:** Forbidden: "a tapestry of," "a testament to," "shivers down her spine," "ஒரு சான்றாக அமைந்தது", "முதுகெலும்பில் நடுக்கம்", "echoed in the silence," and the "it wasn't X, it was Y" construction.
 
 Return only the prose. No headings, labels or commentary.
 """
@@ -208,6 +211,27 @@ Return only the prose. No headings, labels or commentary.
             f"Rhythm={c.voice_fingerprint.sentence_structure}; Signature={c.voice_fingerprint.frequently_used_terms}; Never says={c.voice_fingerprint.taboo_phrases}"
             for c in chars
         ) or "- Real people and cases only, as named in this scene's objective."
+
+    @staticmethod
+    def _canon_context(registry: CharacterRegistry, sub_beat: SubBeat, chapter_beat: ChapterBeat) -> str:
+        present = {n.lower() for n in sub_beat.characters_present}
+        chars = [c for c in registry.characters if c.name.lower() in present] or registry.characters
+        year = getattr(chapter_beat, "year", None)
+        lines = []
+        for c in chars:
+            bits = [c.name]
+            aliases = getattr(c, "aliases", None) or []
+            if aliases:
+                bits.append(f"also called {', '.join(aliases)}")
+            birth = getattr(c, "birth_year", None)
+            if birth and year:
+                bits.append(f"born {birth}, therefore {year - birth} in {year}")
+            elif birth:
+                bits.append(f"born {birth}")
+            for key, value in (getattr(c, "canonical_facts", None) or {}).items():
+                bits.append(f"{key}: {value}")
+            lines.append("- " + "; ".join(bits))
+        return "\n".join(lines) or "- No fixed facts recorded for this cast."
 
     @staticmethod
     def _story_so_far(story_state: StoryState) -> str:

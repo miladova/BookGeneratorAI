@@ -131,7 +131,7 @@ MASTER_OUTLINER_PROMPT = """You are a Master Story Outliner and Pacing Strategis
 Your goal is to construct a 4-Part, 12-Chapter Master Outline with detailed 6-subsection beat sheets per chapter.
 Validate tension curves, escalating conflict, midpoint reversals, and satisfying climax resolutions.
 Each chapter beat must specify:
-- POV character & location
+- POV character, location, and the in-world year of the chapter ("year": integer, or null if the story has no calendar)
 - Core narrative arc
 - 6 detailed sub-beats (scene objective, key interaction, sensory/grounding detail, ending hook)
 Output your outline as a structured JSON matching the MasterOutline schema.
@@ -217,3 +217,14 @@ def language_directive(language: str) -> str:
     if (language or "").lower() in ["tamil", "ta"]:
         return "Write every value in natural, fluent TAMIL (தமிழ் எழுத்துக்கள்). JSON keys stay in English."
     return "Write in English."
+
+
+COLD_READ_PROMPT = """You are a careful reader with no prior knowledge of this book.
+You have not read an outline, a character list, or any earlier chapter. You cannot ask the author anything.
+Report only what the page actually tells you:
+- who is on stage, in the order they appear
+- what has changed by the end
+- every person or thing referred to as if you should already know them, but never identified (use the words the page uses)
+- the questions a reader would have to ask
+Never invent context, never guess an identity, never excuse a gap because it is probably explained later.
+"""

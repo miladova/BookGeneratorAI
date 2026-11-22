@@ -69,6 +69,22 @@ class Finding:
         return f"[{self.code}] {self.detail}\n    \"{self.sentence.strip()}\""
 
 
+def canon_from_registry(registry) -> List[Character]:
+    """Adapt a ``CharacterRegistry`` to the checker's cast.
+
+    Ages are never read from the registry, only birth years and aliases: a stored
+    age is a claim that goes stale, a birth year is a fact.
+    """
+    cast = []
+    for c in getattr(registry, "characters", []):
+        cast.append(Character(
+            name=c.name,
+            birth_year=getattr(c, "birth_year", None),
+            aliases=tuple(getattr(c, "aliases", ()) or ()),
+        ))
+    return cast
+
+
 def load_canon(path: str | Path) -> List[Character]:
     """Read a canon file: {"characters": [{"name":..., "birth_year":..., "aliases":[...]}]}."""
     data = json.loads(Path(path).read_text())
@@ -196,7 +212,7 @@ def _role_before(sentence: str, start: int, window: int = 60) -> Optional[str]:
 def check_chapter(
     text: str,
     *,
-    year: int,
+    year: Optional[int],
     cast: Sequence[Character],
     require_named_numbers: bool = True,
 ) -> List[Finding]:
@@ -225,7 +241,7 @@ def check_chapter(
 
             character = _alias_before(sentence, start, cast)
             if character is not None:
-                if character.birth_year is None:
+                if character.birth_year is None or year is None:
                     continue
                 expected = year - character.birth_year
                 if value != expected:

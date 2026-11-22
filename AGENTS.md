@@ -14,6 +14,19 @@ This file serves as the definitive instruction manual for autonomous AI coding a
 
 ---
 
+## 🧷 Continuity Invariants (do not regress)
+
+Every reviewer in this repo reads the way an author does: it already knows the outline, the cast and the recaps, so it cannot see what a stranger sees on a first read. Four rules keep that blind spot closed.
+
+1. **Store birth years, never ages.** `CharacterProfile.birth_year` is canon; an age is derived from the chapter's `year` (`ChapterBeat.year`). An age written into a character card goes stale the moment the story moves forward.
+2. **Numbers must agree with canon.** `tools/continuity.py` runs deterministic checks inside `MasterAdversarialReviewer.evaluate_chapter` before any model is called, and feeds findings into `RevisionBrief.continuity_issues` so the existing revision loop repairs them. No API cost, no persuasion.
+3. **A person is named before being numbered.** `PROSE_DRAFTER_PROMPT` forbids introducing someone by role and age ("the vicar, twenty-six") while another character in the scene could answer to that description. If withholding a name is deliberate, nothing else in the scene may fit it.
+4. **Read the chapter cold.** `agents/cold_reader.py` sees the text and nothing else, and reports every person or thing referred to but never identified. Enable with `BookConfig(cold_read=True)`; it is off by default so offline tests stay cheap.
+
+**Every defect a reader finds becomes a fixture in `tests/test_continuity.py`** — failing on the original sentence, passing on the repair — before the fix is considered done. Checks must stay precise: a gate that cries wolf gets switched off, and then nothing is detected at all. Add a silence test for every new pattern.
+
+---
+
 ## ⚙️ Executable Verification Commands
 
 Before declaring any coding task complete, run the following verification pipeline:

@@ -101,5 +101,116 @@ class TestNoFalsePositives(unittest.TestCase):
                           "spent the war in the seminary at Kraków.")
 
 
+class TestRegistryToCanon(unittest.TestCase):
+    """The pipeline adapter: canonical birth years in, derived ages checked."""
+
+    def setUp(self):
+        from schemas.models import CharacterProfile, CharacterRegistry
+        self.registry = CharacterRegistry(characters=[
+            CharacterProfile(name="Tadeusz Rybak", role="Curate", birth_year=1932,
+                             aliases=["Rybak", "Tadeusz"]),
+            CharacterProfile(name="Aleksander Zaremba", role="Parish priest", birth_year=1922,
+                             aliases=["Zaremba", "Olek"]),
+        ])
+
+    def test_birth_year_drives_the_check(self):
+        from tools.continuity import canon_from_registry, check_chapter
+        cast = canon_from_registry(self.registry)
+        self.assertEqual(len(cast), 2)
+        findings = check_chapter(CH5_DRIFT, year=1955, cast=cast)
+        self.assertIn("AGE_CONFLICT", [f.code for f in findings])
+
+    def test_no_year_means_no_age_claims_are_judged(self):
+        from tools.continuity import canon_from_registry, check_chapter
+        findings = check_chapter(CH5_DRIFT, year=None, cast=canon_from_registry(self.registry))
+        self.assertEqual([f for f in findings if f.code == "AGE_CONFLICT"], [])
+
+    def test_unnamed_referent_still_caught_without_a_year(self):
+        from tools.continuity import canon_from_registry, check_chapter
+        findings = check_chapter(BEFORE, year=None, cast=canon_from_registry(self.registry))
+        self.assertIn("UNNAMED_NUMERIC", [f.code for f in findings])
+
+
+class TestDrafterReceivesCanon(unittest.TestCase):
+    """The draft prompt must carry the facts, or the model cannot honour them."""
+
+    def _prompt(self):
+        from agents.prose_drafter import ProseDrafterAgent
+        from schemas.models import (BookBrief, ChapterBeat, CharacterProfile,
+                                    CharacterRegistry, SubBeat, WorldBible)
+        from tests.fake_llm import FakeLlm
+
+        registry = CharacterRegistry(characters=[
+            CharacterProfile(name="Tadeusz Rybak", role="Curate", birth_year=1932,
+                             aliases=["Rybak"], canonical_facts={"birthplace": "a village near Płock"}),
+            CharacterProfile(name="Aleksander Zaremba", role="Parish priest", birth_year=1922),
+        ])
+        chapter = ChapterBeat(chapter_number=6, title="Room 214", year=1958,
+                              pov_character="Zofia Kędzierska")
+        sub = SubBeat(section_number="6.1", characters_present=["Tadeusz Rybak"],
+                      scene_objective="Deliver the summons.")
+        drafter = ProseDrafterAgent(FakeLlm())
+        return drafter._scene_prompt(chapter, sub, WorldBible(), registry,
+                                     self._empty_state(), BookBrief(), "")
+
+    @staticmethod
+    def _empty_state():
+        from schemas.models import StoryState
+        return StoryState()
+
+    def test_canon_block_contains_derived_age(self):
+        prompt = self._prompt()
+        self.assertIn("born 1932", prompt)
+        self.assertIn("26 in 1958", prompt)
+
+    def test_canon_block_contains_aliases_and_facts(self):
+        prompt = self._prompt()
+        self.assertIn("also called Rybak", prompt)
+        self.assertIn("birthplace: a village near Płock", prompt)
+
+    def test_first_mention_rule_is_in_the_prompt(self):
+        prompt = self._prompt()
+        self.assertIn("First mention", prompt)
+        self.assertIn("give the name before the age", prompt)
+
+
+class TestMechanicalFindingsReachTheRevisionBrief(unittest.TestCase):
+    """A finding the model never sees is a finding nobody fixes."""
+
+    def test_contradiction_becomes_a_continuity_issue(self):
+        from agents.critics import MasterAdversarialReviewer
+        from schemas.models import (ChapterBeat, CharacterProfile, CharacterRegistry,
+                                    StoryState, WorldBible)
+        from tests.fake_llm import FakeLlm
+
+        registry = CharacterRegistry(characters=[
+            CharacterProfile(name="Tadeusz Rybak", role="Curate", birth_year=1932, aliases=["Rybak"])])
+        chapter = ChapterBeat(chapter_number=5, title="The Plank", year=1955)
+        reviewer = MasterAdversarialReviewer(FakeLlm())
+        brief = reviewer.evaluate_chapter(chapter, CH5_DRIFT, WorldBible(), registry, StoryState())
+        self.assertTrue(any("Tadeusz Rybak is 23 in 1955" in i.description
+                            for i in brief.continuity_issues))
+
+
+class TestColdReader(unittest.TestCase):
+    def test_confusion_is_reported(self):
+        from agents.cold_reader import ColdReaderAgent
+        from tests.fake_llm import FakeLlm
+        import json
+
+        class Reader(FakeLlm):
+            def _cold_read(self, prompt):
+                return json.dumps({
+                    "who_is_on_stage": ["Turski", "a boy of twenty-six"],
+                    "what_changed": ["The Office will consider the nomination"],
+                    "unresolved_references": ["a boy at St Kazimierz, twenty-six"],
+                    "questions": ["Which priest is twenty-six?"],
+                })
+
+        report = ColdReaderAgent(Reader()).read(1, BEFORE)
+        self.assertTrue(report.is_confused)
+        self.assertIn("a boy at St Kazimierz, twenty-six", report.unresolved_references)
+
+
 if __name__ == "__main__":
     unittest.main()

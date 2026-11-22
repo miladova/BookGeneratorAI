@@ -300,6 +300,32 @@ class MasterAdversarialReviewer:
         self.anti_slop_editor = AntiSlopEditorAgent(llm_client)
         self.developmental_editor = DevelopmentalEditorAgent(llm_client)
 
+    @staticmethod
+    def _mechanical_continuity(chapter_beat, chapter_text: str, registry) -> List[ContinuityIssue]:
+        """Deterministic checks that run before (and independently of) the model.
+
+        The LLM continuity editor compares a chapter to a rolling recap, so it
+        cannot see a number asserted in chapter one and contradicted in chapter
+        five. These checks compare the prose to canon instead, and never call a
+        model, so they cost nothing and cannot be talked out of a finding.
+        """
+        from tools.continuity import canon_from_registry, check_chapter
+
+        issues: List[ContinuityIssue] = []
+        for finding in check_chapter(
+            chapter_text,
+            year=getattr(chapter_beat, "year", None),
+            cast=canon_from_registry(registry),
+        ):
+            issues.append(ContinuityIssue(
+                severity="CRITICAL" if finding.code == "AGE_CONFLICT" else "MAJOR",
+                location=f"Chapter {chapter_beat.chapter_number}",
+                description=finding.detail,
+                remedy=("Correct the number to agree with canon, or name the person "
+                        "before giving their number."),
+            ))
+        return issues
+
     def evaluate_chapter(
         self,
         chapter_beat: ChapterBeat,
@@ -311,7 +337,8 @@ class MasterAdversarialReviewer:
         brief: BookBrief = None
     ) -> RevisionBrief:
         lang = getattr(world_bible, "language", "english")
-        cont_issues = self.continuity_editor.audit_chapter(
+        cont_issues = self._mechanical_continuity(chapter_beat, chapter_text, registry)
+        cont_issues += self.continuity_editor.audit_chapter(
             chapter_beat.chapter_number, chapter_text, world_bible, registry, story_state
         )
         slop_violations = self.anti_slop_editor.audit_slop(
