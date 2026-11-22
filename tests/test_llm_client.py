@@ -75,3 +75,49 @@ class TestRetries(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestProviderSelection(unittest.TestCase):
+    def test_auto_detects_each_cloud_key(self):
+        for env_name, expected in [
+            ("GEMINI_API_KEY", "gemini"),
+            ("OPENAI_API_KEY", "openai"),
+            ("ANTHROPIC_API_KEY", "anthropic"),
+        ]:
+            with patch.dict("os.environ", {env_name: "test-key"}, clear=True):
+                self.assertEqual(LlmClient(provider="auto").provider, expected)
+
+    def test_auto_prefers_gemini_then_falls_back_to_ollama(self):
+        with patch.dict("os.environ", {"GEMINI_API_KEY": "g", "OPENAI_API_KEY": "o"}, clear=True):
+            self.assertEqual(LlmClient().provider, "gemini")
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(LlmClient().provider, "ollama")
+
+    def test_openai_default_model_is_current(self):
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "o"}, clear=True):
+            self.assertEqual(LlmClient().model, "gpt-6.2-sol")
+
+    def test_unsupported_provider_is_rejected(self):
+        with self.assertRaises(ValueError):
+            LlmClient(provider="jev", api_key="x")
+
+
+class TestOpenAIPayload(unittest.TestCase):
+    def payload_for(self, model):
+        client = LlmClient(provider="openai", api_key="x", model=model)
+        response = {"choices": [{"message": {"content": "Prose."}, "finish_reason": "stop"}]}
+        with patch.object(client, "_post_json", return_value=response) as post:
+            client.generate_text("p", max_tokens=100)
+        return post.call_args.args[1]
+
+    def test_reasoning_models_use_max_completion_tokens_without_temperature(self):
+        payload = self.payload_for("gpt-6.2-sol")
+        self.assertEqual(payload["max_completion_tokens"], 100)
+        self.assertNotIn("max_tokens", payload)
+        self.assertNotIn("temperature", payload)
+
+    def test_legacy_models_keep_max_tokens_and_temperature(self):
+        payload = self.payload_for("gpt-4o")
+        self.assertEqual(payload["max_tokens"], 100)
+        self.assertNotIn("max_completion_tokens", payload)
+        self.assertEqual(payload["temperature"], 0.7)

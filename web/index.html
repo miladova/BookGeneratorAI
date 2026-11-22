@@ -180,10 +180,9 @@
               <label for="ai-provider"><i class="fa-solid fa-server"></i> AI Engine Provider</label>
               <select id="ai-provider" onchange="toggleProviderSettings()">
                 <option value="ollama" selected>Local Ollama (Offline / Free)</option>
-                <option value="jev">TypeSafe Jev (70ms System-One)</option>
                 <option value="gemini">Google Gemini AI</option>
-                <option value="openai">OpenAI (GPT-4o)</option>
-                <option value="anthropic">Anthropic (Claude 3.5)</option>
+                <option value="openai">OpenAI (GPT-6)</option>
+                <option value="anthropic">Anthropic (Claude 5.5)</option>
               </select>
 
             </div>
@@ -192,7 +191,7 @@
           <div class="form-row">
             <div class="form-group flex-1" id="model-name-group">
               <label for="model-name"><i class="fa-solid fa-microchip"></i> AI Model</label>
-              <input type="text" id="model-name" value="deepseek-r1:latest" placeholder="e.g. deepseek-r1:latest, gemini-1.5-flash">
+              <input type="text" id="model-name" value="deepseek-r1:latest" placeholder="e.g. deepseek-r1:latest, gemini-3.5-flash-lite, gpt-6.2-sol">
             </div>
 
             <div class="form-group flex-1" id="api-key-group">

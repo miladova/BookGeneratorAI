@@ -6,8 +6,7 @@ whole-book release review, publishing kit and DOCX/EPUB compilation.
 """
 
 import argparse
-import os
-from generator.llm_client import LlmClient
+from generator.llm_client import LlmClient, detect_provider
 from pipeline import BookConfig, BookPipeline, book_dir_for
 
 
@@ -19,7 +18,7 @@ def main():
     parser.add_argument("--author", "-a", default="Pravin Tamilan", help="Author name (default: 'Pravin Tamilan')")
     parser.add_argument("--language", "-l", default="english", choices=["english", "tamil"], help="Target language (default: english)")
     parser.add_argument("--tamil", action="store_true", help="Shortcut for --language tamil")
-    parser.add_argument("--provider", "-p", default=None, choices=["auto", "ollama", "jev", "openai", "gemini", "anthropic"], help="LLM provider (default: auto-detected from environment)")
+    parser.add_argument("--provider", "-p", default=None, choices=["auto", "ollama", "openai", "gemini", "anthropic"], help="LLM provider (default: auto-detected from GEMINI_API_KEY, OPENAI_API_KEY or ANTHROPIC_API_KEY, else Ollama)")
     parser.add_argument("--model", "-m", default=None, help="Model name")
     parser.add_argument("--editor-provider", default=None, choices=["ollama", "openai", "gemini", "anthropic"], help="Provider for the editor that scores chapters (default: same as --provider)")
     parser.add_argument("--editor-model", default=None, help="Model for the editor that scores chapters. A different, stronger model judges more honestly")
@@ -45,9 +44,7 @@ def main():
 
     language = "tamil" if args.tamil else args.language
 
-    resolved_provider = args.provider
-    if not resolved_provider or resolved_provider == "auto":
-        resolved_provider = "gemini" if (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) else "ollama"
+    resolved_provider = detect_provider() if args.provider in (None, "", "auto") else args.provider
 
     llm_client = LlmClient(provider=resolved_provider, model=args.model, ollama_url=args.ollama_url)
     editor_llm = None

@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import unittest
@@ -27,6 +28,11 @@ class TestPipeline(unittest.TestCase):
         self.assertTrue(zipfile.is_zipfile(result["epub"]))
         self.assertTrue(os.path.exists(os.path.join(pipeline.publishing_dir, "listing.md")))
         self.assertEqual(llm.tasks.count("choose opening"), 1)
+
+        with open(os.path.join(pipeline.book_dir, "book.json"), encoding="utf-8") as f:
+            manifest = json.load(f)
+        self.assertEqual(manifest["title"], "The Ledger")
+        self.assertEqual(manifest["author"], "A. Writer")
 
         text = "\n".join(p.text for p in docx.Document(result["docx"]).paragraphs)
         for fabricated in ["Praise", "BESTSELLER", "masterpiece", "Thought Leader", "$69.99", "ISBN"]:

@@ -10,7 +10,7 @@ Whether you want to add support for new LLM runners, refine anti-slop tropes, ad
 
 ### 1. Fork & Clone
 ```bash
-git clone https://github.com/apravint/BookGeneratorAI.git
+git clone https://github.com/miladova/BookGeneratorAI.git
 cd BookGeneratorAI
 ```
 
@@ -37,10 +37,10 @@ Output goes to `books/Test_Book/`.
 
 ## 🎯 Good First Issues for New Contributors
 
-Looking for a manageable task to get started? Check out our open issues labeled `good first issue` or pick one of these candidate tasks:
+Looking for a manageable task to get started? Pick one of these candidate tasks:
 
-1. **`AntiSlopEditorAgent` Unit Tests**: Write unit tests in `tests/test_critics.py` testing regex detection of banned phrases and preachy endings.
-2. **EPUB / PDF Exporter**: Extend `generator/docx_compiler.py` or add `generator/epub_compiler.py` to compile Markdown output directly to `.epub` or `.pdf`.
+1. **`AntiSlopEditorAgent` Unit Tests**: Write unit tests in `tests/test_critics_cadence.py` testing regex detection of banned phrases and preachy endings.
+2. **EPUB / PDF Exporter**: Extend `generator/docx_compiler.py` or `tools/epub_compiler.py` to compile Markdown output directly to `.epub` or `.pdf`.
 3. **Interactive CLI Menu**: Add an interactive terminal prompt using `rich` or `questionary` when `main.py` is called with no arguments.
 4. **LM Studio / vLLM API Adapter**: Extend `generator/llm_client.py` to natively support LM Studio (`http://localhost:1234/v1`) and vLLM endpoints.
 

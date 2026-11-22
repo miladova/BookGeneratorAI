@@ -502,6 +502,11 @@ textarea {
   border-radius: 6px;
 }
 
+.download-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
 /* Multi-Agent Pipeline Tracker */
 .pipeline-tracker {
   display: flex;

@@ -4,10 +4,12 @@ The single end-to-end workflow behind the CLI, web server and Streamlit studio.
 Each book lives in its own directory, so books can never overwrite or resume into one another.
 """
 
+import json
 import os
 import re
 import shutil
 import unicodedata
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Dict
@@ -97,6 +99,7 @@ class BookPipeline:
             print(f"  [Environment Reset] Removing '{self.book_dir}'...")
             shutil.rmtree(self.book_dir)
         os.makedirs(self.publishing_dir, exist_ok=True)
+        self._write_book_meta()
 
         self.state = StateManager(db_path=os.path.join(self.book_dir, "state.db"))
         self.writer = FileWriterTool(output_dir=self.manuscript_dir)
@@ -140,6 +143,7 @@ class BookPipeline:
         publishing_metadata.setdefault("subtitle", kit.subtitle)
         self._compile(publishing_metadata, final=True)
         self._export_cards()
+        self._write_book_meta()
 
         result.update(docx=os.path.abspath(self.docx_path), epub=os.path.abspath(self.epub_path), report=os.path.abspath(report_path))
         print(f"\nDOCX: {result['docx']}\nEPUB: {result['epub']}\nReport: {result['report']}")
@@ -317,6 +321,19 @@ Return ONLY JSON: {{"best": 1}}
         self.writer.compile_docx(config.title, config.concept, config.author, self.docx_path, config.language, metadata=metadata)
         if final:
             self.writer.compile_epub(config.title, config.author, self.epub_path, config.language, cover_image_path=config.cover, metadata=metadata)
+
+    def _write_book_meta(self):
+        """Small manifest so the web dashboard can list books without opening the database."""
+        meta = {
+            "title": self.config.title,
+            "author": self.config.author,
+            "genre": self.config.genre,
+            "language": self.config.language,
+            "concept": self.config.concept,
+            "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        with open(os.path.join(self.book_dir, "book.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=2)
 
     def _export_cards(self):
         target = self.config.export_cards

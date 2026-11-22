@@ -56,13 +56,11 @@ function toggleProviderSettings() {
   if (provider === "ollama") {
     modelInput.value = "deepseek-r1:latest";
   } else if (provider === "gemini") {
-    modelInput.value = "gemini-1.5-flash";
+    modelInput.value = "gemini-3.5-flash-lite";
   } else if (provider === "openai") {
-    modelInput.value = "gpt-4o";
+    modelInput.value = "gpt-6.2-sol";
   } else if (provider === "anthropic") {
-    modelInput.value = "claude-3-5-sonnet-20240620";
-  } else if (provider === "jev") {
-    modelInput.value = "jev-system1";
+    modelInput.value = "claude-opus-5-5";
   }
 }
 
@@ -179,33 +177,41 @@ function renderJobsDashboard(jobs) {
     return;
   }
 
-  container.innerHTML = jobs.map(j => `
-    <div class="job-card ${j.status}">
+  container.innerHTML = jobs.map(j => {
+    const status = ["completed", "running"].includes(j.status) ? j.status : "incomplete";
+    const percent = Math.max(0, Math.min(100, Number(j.progress_percent) || 0));
+    const message = escapeHtml(j.message || "");
+    return `
+    <div class="job-card ${status}">
       <div class="job-header">
         <div>
-          <div class="job-title">${j.title || 'தமிழ் புத்தகம்'}</div>
-          <div class="job-meta">ஆசிரியர்: ${j.author || 'பிரவின்'} • ${j.genre || 'வரலாறு'} • Provider: ${(j.provider || 'ollama').toUpperCase()}</div>
+          <div class="job-title">${escapeHtml(j.title || 'தமிழ் புத்தகம்')}</div>
+          <div class="job-meta">ஆசிரியர்: ${escapeHtml(j.author || 'பிரவின்')} • ${escapeHtml(j.genre || 'வரலாறு')} • Provider: ${escapeHtml((j.provider || 'ollama').toUpperCase())}</div>
         </div>
-        <span class="status-pill ${j.status === 'completed' ? 'status-ready' : (j.status === 'running' ? 'status-running' : '')}">
-          ${j.status === 'completed' ? 'நிறைவடைந்தது' : (j.status === 'running' ? 'இயங்குகிறது' : j.status)}
+        <span class="status-pill ${status === 'completed' ? 'status-ready' : (status === 'running' ? 'status-running' : '')}">
+          ${status === 'completed' ? 'நிறைவடைந்தது' : (status === 'running' ? 'இயங்குகிறது' : escapeHtml(status))}
         </span>
       </div>
 
       <div class="progress-info">
-        <span style="font-size: 11px; color: var(--text-muted);">${j.message || ''}</span>
-        <span style="font-size: 11px;">${j.progress_percent || 0}%</span>
+        <span style="font-size: 11px; color: var(--text-muted);">${message}</span>
+        <span style="font-size: 11px;">${percent}%</span>
       </div>
 
       <div class="progress-bar-bg">
-        <div class="progress-bar-fill" style="width: ${j.progress_percent || 0}%;"></div>
+        <div class="progress-bar-fill" style="width: ${percent}%;"></div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
         <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-file-lines"></i> ${j.chapters ? j.chapters.length : 0} அத்தியாயங்கள்</span>
-        ${j.status === 'completed' ? `<a href="/api/download?job_id=${j.job_id}" class="btn btn-success btn-sm"><i class="fa-solid fa-download"></i> DOCX பதிவிறக்கு</a>` : ''}
+        ${j.status === 'completed' ? `<span class="download-actions">
+          ${j.docx_path ? `<a href="/api/download?format=docx&job_id=${encodeURIComponent(j.job_id)}" class="btn btn-success btn-sm"><i class="fa-solid fa-download"></i> DOCX</a>` : ''}
+          ${j.epub_path ? `<a href="/api/download?format=epub&job_id=${encodeURIComponent(j.job_id)}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-book-open"></i> EPUB</a>` : ''}
+        </span>` : ''}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function updatePipelineUI(data) {
@@ -294,20 +300,29 @@ async function switchChapter(num) {
   }
 }
 
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function renderMarkdown(md) {
-  let html = md
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+  let html = escapeHtml(md)
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^### (.*$)/gim, '### $1')
-    .replace(/\*\*(.* vast?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.* vast?)\*/gim, '<em>$1</em>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/\n\n/g, '</p><p>');
 
   return `<div class="md-rendered"><p>${html}</p></div>`;
 }
 
 function downloadDocx() {
-  window.location.href = `/api/download?job_id=${currentJobId || ''}`;
+  window.location.href = `/api/download?format=docx&job_id=${encodeURIComponent(currentJobId || '')}`;
 }
 
 function resetFormBtn() {

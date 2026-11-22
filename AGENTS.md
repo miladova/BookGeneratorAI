@@ -20,7 +20,7 @@ Before declaring any coding task complete, run the following verification pipeli
 
 ### 1. Fast Syntax & Model Compilation Check
 ```bash
-python3 -m py_compile main.py generator/*.py agents/*.py schemas/*.py memory/*.py tools/*.py
+python3 -m py_compile main.py pipeline.py server.py streamlit_app.py generator/*.py agents/*.py schemas/*.py memory/*.py tools/*.py prompts/*.py
 ```
 
 ### 2. Offline Test Suite (no LLM or API cost)
