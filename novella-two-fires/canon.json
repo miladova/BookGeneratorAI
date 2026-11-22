@@ -1,0 +1,17 @@
+{
+  "note": "Birth years are canon. Ages are derived, never stored: an age in prose is a claim, a birth year is a fact.",
+  "characters": [
+    {"name": "Zofia Kędzierska", "birth_year": 1922, "aliases": ["Kędzierska", "Zofia", "Zosia"]},
+    {"name": "Aleksander Zaremba", "birth_year": 1922, "aliases": ["Zaremba", "Aleksander", "Olek"]},
+    {"name": "Bogdan Leszczyński", "birth_year": 1914, "aliases": ["Bogdan", "Leszczyński"]},
+    {"name": "Piotr Leszczyński", "birth_year": 1948, "aliases": ["Piotr"]},
+    {"name": "Adam Turski", "birth_year": 1900, "aliases": ["Turski"]},
+    {"name": "Bolesław Rygier", "birth_year": 1905, "aliases": ["Rygier"]},
+    {"name": "Tadeusz Rybak", "birth_year": 1932, "aliases": ["Rybak", "Tadeusz"]},
+    {"name": "Julian Rożek", "birth_year": 1884, "aliases": ["Rożek"]},
+    {"name": "Wanda Sroka", "birth_year": 1904, "aliases": ["Wanda", "Sroka"]},
+    {"name": "Marianna Kędzierska", "birth_year": 1893, "aliases": ["Marianna"]},
+    {"name": "Irena Wolska", "birth_year": 1908, "aliases": ["Irena", "Wolska"]},
+    {"name": "Bronisława", "birth_year": 1898, "aliases": ["Bronisława", "Pani Bronisława"]}
+  ]
+}
