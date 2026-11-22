@@ -77,9 +77,9 @@ def main():
         
         provider = st.selectbox(
             "AI Provider",
-            options=["ollama", "gemini", "openai", "anthropic", "jev"],
+            options=["ollama", "gemini", "openai", "anthropic"],
             index=0,
-            help="Select Local Ollama (Free) or Cloud API Provider"
+            help="Select Local Ollama (Free) or a Cloud API Provider"
         )
 
         api_key = ""
@@ -88,19 +88,28 @@ def main():
 
         if provider == "ollama":
             ollama_url = st.text_input("Ollama Endpoint", value="http://localhost:11434")
-            model_name = st.selectbox("Ollama Model", options=["qwen2.5:1.5b", "deepseek-r1:latest", "llama3:latest", "mistral:latest"], index=0)
+            model_name = st.text_input(
+                "Ollama Model", value=os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b"),
+                help="Any pulled Ollama tag, e.g. deepseek-r1:latest or llama3:latest. Small models rarely clear the editorial bar."
+            )
         elif provider == "gemini":
-            api_key = st.text_input("Gemini API Key", type="password", help="Get free key from Google AI Studio")
-            model_name = st.selectbox("Gemini Model", options=["gemini-2.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-lite"], index=0)
+            api_key = st.text_input("Gemini API Key", type="password", help="Get a key from Google AI Studio")
+            model_name = st.text_input(
+                "Gemini Model", value=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
+                help="Any current Gemini model ID, e.g. gemini-3.5-flash-lite."
+            )
         elif provider == "openai":
             api_key = st.text_input("OpenAI API Key", type="password")
-            model_name = st.selectbox("OpenAI Model", options=["gpt-4o", "gpt-4o-mini"], index=0)
+            model_name = st.text_input(
+                "OpenAI Model", value=os.getenv("OPENAI_MODEL", "gpt-6.2-sol"),
+                help="Any current OpenAI model ID, e.g. gpt-6.2-sol or gpt-6.1-terra."
+            )
         elif provider == "anthropic":
             api_key = st.text_input("Anthropic API Key", type="password")
-            model_name = st.selectbox("Anthropic Model", options=["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"], index=0)
-        elif provider == "jev":
-            api_key = st.text_input("Jev API Key", type="password")
-            model_name = st.selectbox("Jev Model", options=["jev-sys1-standard"], index=0)
+            model_name = st.text_input(
+                "Anthropic Model", value=os.getenv("ANTHROPIC_MODEL", "claude-opus-5-5"),
+                help="Any current Claude model ID, e.g. claude-opus-5-5 or claude-sonnet-5-5."
+            )
 
         st.divider()
         language = st.radio("Primary Book Language", options=["tamil", "english"], format_func=lambda x: "தமிழ் (Tamil)" if x == "tamil" else "English")

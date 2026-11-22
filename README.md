@@ -135,6 +135,7 @@ books/<title>/
 ├── <title>.docx, <title>.epub
 ├── manuscript/chapter_01.md ...
 ├── publishing/release_report.md, listing.md, metadata.json, fact_check.md
+├── book.json
 └── state.db
 ```
 
@@ -143,7 +144,7 @@ books/<title>/
 ## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/apravint/BookGeneratorAI.git
+git clone https://github.com/miladova/BookGeneratorAI.git
 cd BookGeneratorAI
 pip install -r requirements.txt
 ```
@@ -173,7 +174,9 @@ python3 main.py -t "Your Title" -c "Your concept" --provider gemini --editor-pro
 
 If an account runs out of quota or credit, the run stops immediately with a clear message instead of retrying. Rerun the same command to resume.
 
-Set `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY` for cloud providers. Local models are free, but small ones will rarely clear the editorial bar. Run the same command again to resume.
+Set `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GEMINI_API_KEY` for cloud providers. With `--provider auto` (the default), the engine checks Gemini, then OpenAI, then Anthropic, and falls back to local Ollama. Local models are free, but small ones will rarely clear the editorial bar. Run the same command again to resume.
+
+Model defaults are current as of November 2026: `gemini-3.5-flash-lite`, `gpt-6.2-sol` and `claude-opus-5-5`. Override them with `--model`, or with `GEMINI_MODEL`, `OPENAI_MODEL`, `ANTHROPIC_MODEL` or `OLLAMA_MODEL`. The Streamlit dashboard accepts any model ID, so newer models do not require a code change.
 
 To add real endorsements, put permissioned quotes in `books/<title>/manuscript/praise.md`.
 
@@ -189,7 +192,7 @@ To add real endorsements, put permissioned quotes in `books/<title>/manuscript/p
 | `--author` | `-a` | `Pravin Tamilan` | Author name |
 | `--language` | `-l` | `english` | `english` or `tamil` |
 | `--tamil` | | off | Shortcut for `--language tamil` |
-| `--provider` | `-p` | auto-detected | `ollama`, `gemini`, `openai`, `anthropic`, `jev` |
+| `--provider` | `-p` | auto-detected | `ollama`, `gemini`, `openai`, `anthropic` |
 | `--model` | `-m` | provider default | Model name |
 | `--editor-provider` / `--editor-model` | | same as writer | Separate model that scores chapters, picks the opening and reviews the book |
 | `--ollama-url` | | `http://localhost:11434` | Ollama endpoint |
@@ -209,7 +212,7 @@ To add real endorsements, put permissioned quotes in `books/<title>/manuscript/p
 ## 🌐 Web Dashboards & Streamlit Studio
 
 ### 1. Interactive Streamlit Studio App (`streamlit_app.py`)
-Run a modern, multi-tab Streamlit dashboard:
+Run a modern Streamlit dashboard:
 
 ```bash
 pip install -r requirements.txt
@@ -218,12 +221,14 @@ streamlit run streamlit_app.py
 > Launch at **`http://localhost:8501`** to generate books, monitor the pipeline, and download the DOCX, EPUB and release report.
 
 ### 2. Built-in REST API & Multi-Book Web Server (`server.py`)
-Run a zero-dependency local REST API web server:
+Run the built-in REST API and multi-book dashboard (Python standard-library HTTP server on top of the same engine):
 
 ```bash
 python3 server.py
 ```
-> Access at **`http://localhost:8080`**. It listens on this computer only, because the API starts paid LLM jobs and has no authentication.
+> Access at **`http://localhost:8080`**. It listens on this computer only by default, because the API starts paid LLM jobs and has no authentication. To expose it on a trusted network or from a container, pass `--host 0.0.0.0` (or set `BOOKGEN_HOST`). Use `--port` / `BOOKGEN_PORT` to change the port.
+
+The dashboard scans `books/` at startup and while idle, so books generated from the CLI and books from earlier runs remain visible and downloadable. Both DOCX and EPUB downloads are available.
 
 ---
 

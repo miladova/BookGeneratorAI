@@ -20,6 +20,24 @@ REQUEST_TIMEOUT = 600
 META_PREAMBLE = re.compile(r"^(okay|ok|sure|certainly|of course|here is|here's|below is|as an ai)\b", re.IGNORECASE)
 META_SUBJECT = re.compile(r"\b(chapter|scene|draft|manuscript|prose|revis|rewrit|json|beat|section)", re.IGNORECASE)
 
+SUPPORTED_PROVIDERS = ("ollama", "openai", "gemini", "anthropic")
+# Order matters: the first provider with an API key wins when --provider auto is used.
+PROVIDER_KEY_ENV = (
+    ("gemini", ("GEMINI_API_KEY", "GOOGLE_API_KEY")),
+    ("openai", ("OPENAI_API_KEY",)),
+    ("anthropic", ("ANTHROPIC_API_KEY",)),
+)
+# GPT-5/6 and o-series reject max_tokens and non-default sampling parameters.
+OPENAI_REASONING_MODEL = re.compile(r"^(o[1-9]|gpt-[5-9])", re.IGNORECASE)
+
+
+def detect_provider() -> str:
+    """Picks a cloud provider from the environment, falling back to local Ollama."""
+    for provider, keys in PROVIDER_KEY_ENV:
+        if any(os.getenv(key) for key in keys):
+            return provider
+    return "ollama"
+
 
 class QuotaExceededError(RuntimeError):
     """The account is out of quota or credit; retrying cannot succeed."""
@@ -42,10 +60,14 @@ class LlmClient:
         model: str = None,
         ollama_url: str = "http://localhost:11434"
     ):
-        default_provider = "gemini" if (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) else "ollama"
-        self.provider = (provider or default_provider).lower()
-        if self.provider == "default":
-            self.provider = default_provider
+        self.provider = (provider or "auto").lower()
+        if self.provider in ("auto", "default"):
+            self.provider = detect_provider()
+        if self.provider not in SUPPORTED_PROVIDERS:
+            raise ValueError(
+                f"Unsupported LLM provider '{self.provider}'. "
+                f"Choose one of: {', '.join(SUPPORTED_PROVIDERS)}."
+            )
         if api_key:
             self.api_key = api_key
         else:
@@ -55,24 +77,20 @@ class LlmClient:
                 self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("LLM_API_KEY")
             elif self.provider == "anthropic":
                 self.api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("LLM_API_KEY")
-            elif self.provider in ["jev", "typesafe"]:
-                self.api_key = os.getenv("JEV_API_KEY") or os.getenv("TYPESAFE_API_KEY") or os.getenv("LLM_API_KEY")
             else:
-                self.api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+                self.api_key = os.getenv("LLM_API_KEY")
 
         self.ollama_url = (ollama_url or "http://localhost:11434").rstrip("/")
         self._truncated = False
-        
+
         if self.provider == "ollama":
             self.model = self._resolve_ollama_model(model or os.getenv("OLLAMA_MODEL"))
-        elif self.provider in ["jev", "typesafe"]:
-            self.model = model or "jev-system1"
         elif self.provider == "gemini":
             self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
         elif self.provider == "anthropic":
-            self.model = model or "claude-opus-5-5"
+            self.model = model or os.getenv("ANTHROPIC_MODEL", "claude-opus-5-5")
         else:
-            self.model = model or "gpt-4o"
+            self.model = model or os.getenv("OPENAI_MODEL", "gpt-6.2-sol")
 
     def _resolve_ollama_model(self, user_model: str = None) -> str:
         """Queries local Ollama tags API to resolve model names and installed aliases."""
@@ -113,8 +131,6 @@ class LlmClient:
         self._truncated = False
         if self.provider == "ollama":
             return self._call_ollama(prompt, system_prompt, max_tokens)
-        elif self.provider in ["jev", "typesafe"]:
-            return self._call_jev(prompt, system_prompt, max_tokens)
         elif self.provider == "openai":
             return self._call_openai(prompt, system_prompt, max_tokens)
         elif self.provider == "gemini":
@@ -123,19 +139,6 @@ class LlmClient:
             return self._call_anthropic(prompt, system_prompt, max_tokens)
         else:
             raise ValueError(f"Unsupported or unconfigured LLM provider: '{self.provider}'.")
-
-    def _call_jev(self, prompt: str, system_prompt: str, max_tokens: int) -> str:
-        """TypeSafe AI Jev System-One Model API Client (70ms Parallel Decision Sampling)."""
-        if not self.api_key:
-            raise ValueError("JEV_API_KEY environment variable is missing.")
-        payload = {
-            "model": "jev-system1",
-            "state": (system_prompt + "\n\n" + prompt).strip(),
-            "questions": ["decision", "classification", "output"]
-        }
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
-        res_data = self._post_json("https://api.typesafe.ai/v1/predict", payload, headers)
-        return json.dumps(res_data.get("decisions", {}), ensure_ascii=False)
 
     def _post_json(self, url: str, payload: dict, headers: dict) -> dict:
         """POST with backoff on rate limits, server errors and dropped connections; fails at once on exhausted quota."""
@@ -215,14 +218,18 @@ class LlmClient:
             "Content-Type": "application/json"
         }
         payload = {
-            "model": self.model or "gpt-4o",
+            "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt or "You are an award-winning author."},
                 {"role": "user", "content": prompt}
             ],
-            "max_tokens": max_tokens,
-            "temperature": 0.7
         }
+        if OPENAI_REASONING_MODEL.match(self.model or ""):
+            # GPT-5/6 and o-series reject max_tokens and non-default temperature.
+            payload["max_completion_tokens"] = max_tokens
+        else:
+            payload["max_tokens"] = max_tokens
+            payload["temperature"] = 0.7
         res_data = self._post_json(url, payload, headers)
         choices = res_data.get("choices") or [{}]
         self._truncated = choices[0].get("finish_reason") == "length"

@@ -5,6 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -29,6 +30,10 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install pytest pytest-cov
+
+      - name: Compile Python Modules
+        run: |
+          python -m py_compile main.py pipeline.py server.py streamlit_app.py generator/*.py agents/*.py schemas/*.py memory/*.py tools/*.py prompts/*.py
 
       - name: Run Test Suite
         run: |
