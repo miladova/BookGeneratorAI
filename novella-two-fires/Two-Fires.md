@@ -113,7 +113,7 @@ Turski turned around. He had the face of an intelligent old heron, and he looked
 
 "What does Rygier want?"
 
-"Rygier wants to arrest the vicar." Turski said it mildly. "A boy at St Kazimierz, twenty-six, teaching the catechism to children in a private flat in Żoliborz, which is of course illegal, and which half the parishes in Warsaw do. Rygier's people have been watching the flat since August. He wants to make an example before the Plenum, and he wants me to write him a note saying the Office raises no objection, and I would rather be shot in the courtyard of the Mokotów prison than write that note for a twenty-six-year-old who teaches children their prayers."
+"Rygier wants to arrest the vicar." Turski said it mildly. "The young one — Rybak, twenty-six, at St Kazimierz, teaching the catechism to children in a private flat in Żoliborz, which is of course illegal, and which half the parishes in Warsaw do. Rygier's people have been watching the flat since August. He wants to make an example before the Plenum, and he wants me to write him a note saying the Office raises no objection, and I would rather be shot in the courtyard of the Mokotów prison than write that note for a twenty-six-year-old who teaches children their prayers."
 
 "You've written worse."
 
